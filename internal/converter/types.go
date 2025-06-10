@@ -37,7 +37,7 @@ var (
 
 func (c *Converter) registerEnum(pkgName string, enum *descriptor.EnumDescriptorProto) {
 	pkg := globalPkg
-	if pkgName != "" {
+	if pkgName != defaultPackageName {
 		for _, node := range strings.Split(pkgName, ".") {
 			if pkg == globalPkg && node == "" {
 				// Skips leading "."
@@ -56,7 +56,7 @@ func (c *Converter) registerEnum(pkgName string, enum *descriptor.EnumDescriptor
 
 func (c *Converter) registerType(pkgName string, msgDesc *descriptor.DescriptorProto) {
 	pkg := globalPkg
-	if pkgName != "" {
+	if pkgName != defaultPackageName {
 		for _, node := range strings.Split(pkgName, ".") {
 			if pkg == globalPkg && node == "" {
 				// Skips leading "."
@@ -75,7 +75,6 @@ func (c *Converter) registerType(pkgName string, msgDesc *descriptor.DescriptorP
 
 // Convert a proto "field" (essentially a type-switch with some recursion):
 func (c *Converter) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDescriptorProto, msgDesc *descriptor.DescriptorProto, duplicatedMessages map[*descriptor.DescriptorProto]string, messageFlags ConverterFlags) (*jsonschema.Type, error) {
-
 	// Prepare a new jsonschema.Type for our eventual return value:
 	jsonSchemaType := &jsonschema.Type{}
 
@@ -396,7 +395,6 @@ func (c *Converter) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDes
 
 // Converts a proto "MESSAGE" into a JSON-Schema:
 func (c *Converter) convertMessageType(curPkg *ProtoPackage, msgDesc *descriptor.DescriptorProto) (*jsonschema.Schema, error) {
-
 	// Get a list of any nested messages in our schema:
 	duplicatedMessages, err := c.findNestedMessages(curPkg, msgDesc)
 	if err != nil {
@@ -408,9 +406,9 @@ func (c *Converter) convertMessageType(curPkg *ProtoPackage, msgDesc *descriptor
 	for refmsgDesc, nameWithPackage := range duplicatedMessages {
 		var typeName string
 		if c.Flags.TypeNamesWithNoPackage {
-			typeName = refmsgDesc.GetName();
+			typeName = refmsgDesc.GetName()
 		} else {
-			typeName = nameWithPackage;
+			typeName = nameWithPackage
 		}
 		refType, err := c.recursiveConvertMessageType(curPkg, refmsgDesc, "", duplicatedMessages, true)
 		if err != nil {
@@ -436,7 +434,6 @@ func (c *Converter) convertMessageType(curPkg *ProtoPackage, msgDesc *descriptor
 // findNestedMessages takes a message, and returns a map mapping pointers to messages nested within it:
 // these messages become definitions which can be referenced (instead of repeating them every time they're used)
 func (c *Converter) findNestedMessages(curPkg *ProtoPackage, msgDesc *descriptor.DescriptorProto) (map[*descriptor.DescriptorProto]string, error) {
-
 	// Get a list of all nested messages, and how often they occur:
 	nestedMessages := make(map[*descriptor.DescriptorProto]string)
 	if err := c.recursiveFindNestedMessages(curPkg, msgDesc, msgDesc.GetName(), nestedMessages); err != nil {
@@ -481,7 +478,6 @@ func (c *Converter) recursiveFindNestedMessages(curPkg *ProtoPackage, msgDesc *d
 }
 
 func (c *Converter) recursiveConvertMessageType(curPkg *ProtoPackage, msgDesc *descriptor.DescriptorProto, pkgName string, duplicatedMessages map[*descriptor.DescriptorProto]string, ignoreDuplicatedMessages bool) (*jsonschema.Type, error) {
-
 	// Prepare a new jsonschema:
 	jsonSchemaType := new(jsonschema.Type)
 
@@ -531,7 +527,6 @@ func (c *Converter) recursiveConvertMessageType(curPkg *ProtoPackage, msgDesc *d
 			if messageFlags.DisallowBigIntsAsStrings {
 				jsonSchemaType.Type = gojsonschema.TYPE_INTEGER
 			} else {
-
 				// BigInt as strings
 				jsonSchemaType.Type = gojsonschema.TYPE_STRING
 			}
@@ -577,9 +572,9 @@ func (c *Converter) recursiveConvertMessageType(curPkg *ProtoPackage, msgDesc *d
 	if nameWithPackage, ok := duplicatedMessages[msgDesc]; ok && !ignoreDuplicatedMessages {
 		var typeName string
 		if c.Flags.TypeNamesWithNoPackage {
-			typeName = msgDesc.GetName();
+			typeName = msgDesc.GetName()
 		} else {
-			typeName = nameWithPackage;
+			typeName = nameWithPackage
 		}
 		return &jsonschema.Type{
 			Ref: fmt.Sprintf("%s%s", c.refPrefix, typeName),
@@ -642,7 +637,7 @@ func (c *Converter) recursiveConvertMessageType(curPkg *ProtoPackage, msgDesc *d
 				if *fieldDesc.OneofIndex < int32(len(jsonSchemaType.AllOf)) {
 					break
 				}
-				var notAnyOf = &jsonschema.Type{Not: &jsonschema.Type{AnyOf: []*jsonschema.Type{}}}
+				notAnyOf := &jsonschema.Type{Not: &jsonschema.Type{AnyOf: []*jsonschema.Type{}}}
 				jsonSchemaType.AllOf = append(jsonSchemaType.AllOf, &jsonschema.Type{OneOf: []*jsonschema.Type{notAnyOf}})
 			}
 			if c.Flags.UseJSONFieldnamesOnly {
