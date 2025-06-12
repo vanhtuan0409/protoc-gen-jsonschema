@@ -1,4 +1,4 @@
-module github.com/vanhtuan0409/protoc-gen-jsonschema
+module github.com/chrusty/protoc-gen-jsonschema
 
 go 1.14
 
